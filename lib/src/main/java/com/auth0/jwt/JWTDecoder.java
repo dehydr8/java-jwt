@@ -1,12 +1,14 @@
 package com.auth0.jwt;
 
+import com.auth0.jwt.b64.Base64Implementation;
+import com.auth0.jwt.b64.DefaultBase64Implementation;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.impl.JWTParser;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Header;
 import com.auth0.jwt.interfaces.Payload;
-import org.apache.commons.codec.binary.Base64;
+
 import org.apache.commons.codec.binary.StringUtils;
 
 import java.util.Date;
@@ -22,20 +24,26 @@ final class JWTDecoder implements DecodedJWT {
     private final String[] parts;
     private final Header header;
     private final Payload payload;
+    private final Base64Implementation base64;
 
-    JWTDecoder(String jwt) throws JWTDecodeException {
+    JWTDecoder(String jwt, Base64Implementation base64) throws JWTDecodeException {
         parts = TokenUtils.splitToken(jwt);
+        this.base64 = base64;
         final JWTParser converter = new JWTParser();
         String headerJson;
         String payloadJson;
         try {
-            headerJson = StringUtils.newStringUtf8(Base64.decodeBase64(parts[0]));
-            payloadJson = StringUtils.newStringUtf8(Base64.decodeBase64(parts[1]));
+            headerJson = StringUtils.newStringUtf8(base64.decode(parts[0]));
+            payloadJson = StringUtils.newStringUtf8(base64.decode(parts[1]));
         } catch (NullPointerException e) {
             throw new JWTDecodeException("The UTF-8 Charset isn't initialized.", e);
         }
         header = converter.parseHeader(headerJson);
         payload = converter.parsePayload(payloadJson);
+    }
+
+    JWTDecoder(String jwt) throws JWTDecodeException {
+        this(jwt, new DefaultBase64Implementation());
     }
 
     @Override

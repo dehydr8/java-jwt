@@ -1,6 +1,8 @@
 package com.auth0.jwt;
 
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.b64.Base64Implementation;
+import com.auth0.jwt.b64.DefaultBase64Implementation;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.SignatureGenerationException;
 import com.auth0.jwt.impl.ClaimsHolder;
@@ -10,7 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.apache.commons.codec.binary.Base64;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
@@ -26,9 +27,11 @@ public final class JWTCreator {
     private final Algorithm algorithm;
     private final String headerJson;
     private final String payloadJson;
+    private final Base64Implementation base64;
 
-    private JWTCreator(Algorithm algorithm, Map<String, Object> headerClaims, Map<String, Object> payloadClaims) throws JWTCreationException {
+    private JWTCreator(Algorithm algorithm, Map<String, Object> headerClaims, Map<String, Object> payloadClaims, Base64Implementation base64) throws JWTCreationException {
         this.algorithm = algorithm;
+        this.base64 = base64;
         try {
             ObjectMapper mapper = new ObjectMapper();
             SimpleModule module = new SimpleModule();
@@ -58,10 +61,16 @@ public final class JWTCreator {
     public static class Builder {
         private final Map<String, Object> payloadClaims;
         private Map<String, Object> headerClaims;
+        private Base64Implementation base64 = new DefaultBase64Implementation();
 
         Builder() {
             this.payloadClaims = new HashMap<>();
             this.headerClaims = new HashMap<>();
+        }
+
+        public Builder withBase64Implementation(Base64Implementation base64) {
+            this.base64 = base64;
+            return this;
         }
 
         /**
@@ -308,7 +317,7 @@ public final class JWTCreator {
             if (signingKeyId != null) {
                 withKeyId(signingKeyId);
             }
-            return new JWTCreator(algorithm, headerClaims, payloadClaims).sign();
+            return new JWTCreator(algorithm, headerClaims, payloadClaims, base64).sign();
         }
 
         private void assertNonNull(String name) {
@@ -327,12 +336,12 @@ public final class JWTCreator {
     }
 
     private String sign() throws SignatureGenerationException {
-        String header = Base64.encodeBase64URLSafeString(headerJson.getBytes(StandardCharsets.UTF_8));
-        String payload = Base64.encodeBase64URLSafeString(payloadJson.getBytes(StandardCharsets.UTF_8));
+        String header = base64.encodeURLSafeString(headerJson.getBytes(StandardCharsets.UTF_8));
+        String payload = base64.encodeURLSafeString(payloadJson.getBytes(StandardCharsets.UTF_8));
         String content = String.format("%s.%s", header, payload);
 
         byte[] signatureBytes = algorithm.sign(content.getBytes(StandardCharsets.UTF_8));
-        String signature = Base64.encodeBase64URLSafeString((signatureBytes));
+        String signature = base64.encodeURLSafeString((signatureBytes));
 
         return String.format("%s.%s", content, signature);
     }

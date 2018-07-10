@@ -1,5 +1,7 @@
 package com.auth0.jwt.algorithms;
 
+import com.auth0.jwt.b64.Base64Implementation;
+import com.auth0.jwt.b64.DefaultBase64Implementation;
 import com.auth0.jwt.exceptions.SignatureGenerationException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -16,6 +18,7 @@ public abstract class Algorithm {
 
     private final String name;
     private final String description;
+    protected final Base64Implementation base64;
 
     /**
      * Creates a new Algorithm instance using SHA256withRSA. Tokens specify this as "RS256".
@@ -316,9 +319,14 @@ public abstract class Algorithm {
         return new NoneAlgorithm();
     }
 
-    protected Algorithm(String name, String description) {
+    protected Algorithm(String name, String description, Base64Implementation base64) {
         this.name = name;
         this.description = description;
+        this.base64 = base64;
+    }
+
+    protected Algorithm(String name, String description) {
+        this(name, description, new DefaultBase64Implementation());
     }
 
     /**
