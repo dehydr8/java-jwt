@@ -1,6 +1,8 @@
 package com.auth0.jwt;
 
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.b64.Base64Implementation;
+import com.auth0.jwt.b64.DefaultBase64Implementation;
 import com.auth0.jwt.exceptions.*;
 import com.auth0.jwt.impl.PublicClaims;
 import com.auth0.jwt.interfaces.Claim;
@@ -18,11 +20,13 @@ public final class JWTVerifier {
     private final Algorithm algorithm;
     final Map<String, Object> claims;
     private final Clock clock;
+    private final Base64Implementation base64;
 
-    JWTVerifier(Algorithm algorithm, Map<String, Object> claims, Clock clock) {
+    JWTVerifier(Algorithm algorithm, Map<String, Object> claims, Clock clock, Base64Implementation base64) {
         this.algorithm = algorithm;
         this.claims = Collections.unmodifiableMap(claims);
         this.clock = clock;
+        this.base64 = base64;
     }
 
     /**
@@ -43,6 +47,7 @@ public final class JWTVerifier {
         private final Algorithm algorithm;
         private final Map<String, Object> claims;
         private long defaultLeeway;
+        private Base64Implementation base64 = new DefaultBase64Implementation();
 
         BaseVerification(Algorithm algorithm) throws IllegalArgumentException {
             if (algorithm == null) {
@@ -282,6 +287,12 @@ public final class JWTVerifier {
             return this;
         }
 
+        @Override
+        public Verification withBase64Implementation(Base64Implementation base64) {
+            this.base64 = base64;
+            return this;
+        }
+
         /**
          * Creates a new and reusable instance of the JWTVerifier with the configuration already provided.
          *
@@ -292,6 +303,7 @@ public final class JWTVerifier {
             return this.build(new ClockImpl());
         }
 
+
         /**
          * Creates a new and reusable instance of the JWTVerifier with the configuration already provided.
          * ONLY FOR TEST PURPOSES.
@@ -301,7 +313,7 @@ public final class JWTVerifier {
          */
         public JWTVerifier build(Clock clock) {
             addLeewayToDateClaims();
-            return new JWTVerifier(algorithm, claims, clock);
+            return new JWTVerifier(algorithm, claims, clock, base64);
         }
 
         private void assertPositive(long leeway) {
@@ -349,7 +361,7 @@ public final class JWTVerifier {
      * @throws InvalidClaimException          if a claim contained a different value than the expected one.
      */
     public DecodedJWT verify(String token) throws JWTVerificationException {
-        DecodedJWT jwt = JWT.decode(token);
+        DecodedJWT jwt = JWT.decode(token, base64);
         verifyAlgorithm(jwt, algorithm);
         algorithm.verify(jwt);
         verifyClaims(jwt, claims);

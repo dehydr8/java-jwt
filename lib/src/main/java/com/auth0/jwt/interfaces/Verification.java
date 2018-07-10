@@ -1,6 +1,7 @@
 package com.auth0.jwt.interfaces;
 
 import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.b64.Base64Implementation;
 
 import java.util.Date;
 
@@ -10,6 +11,8 @@ public interface Verification {
     Verification withSubject(String subject);
 
     Verification withAudience(String... audience);
+
+    Verification withBase64Implementation(Base64Implementation base64);
 
     Verification acceptLeeway(long leeway) throws IllegalArgumentException;
 
